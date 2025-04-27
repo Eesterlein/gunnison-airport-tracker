@@ -11,15 +11,12 @@ app.use(cors());
 app.use(express.static('public'));
 
 // PostgreSQL Client Setup
-require('dotenv').config(); // This loads environment variables from your .env file
-
-// PostgreSQL Client Setup using environment variables
 const client = new Client({
-  user: process.env.DB_USER,  // Get the username from the environment variable
-  host: process.env.DB_HOST,  // Get the host from the environment variable
-  database: process.env.DB_NAME,  // Get the database name from the environment variable
-  password: process.env.DB_PASSWORD,  // Get the password from the environment variable
-  port: process.env.DB_PORT,  // Get the port from the environment variable
+  user: process.env.DB_USER,  // Use environment variables
+  host: process.env.DB_HOST,
+  database: process.env.DB_NAME,
+  password: process.env.DB_PASSWORD,
+  port: process.env.DB_PORT,
 });
 
 client.connect();
@@ -124,6 +121,18 @@ app.get('/planes-near-gunnison', async (req, res) => {
   } catch (error) {
     console.error('Error fetching or inserting flight data:', error);
     res.status(500).send('Error fetching or inserting flight data.');
+  }
+});
+
+// Fetch flights from PostgreSQL database
+app.get('/api/flights', async (req, res) => {
+  try {
+    const result = await client.query('SELECT * FROM flights WHERE category != \'Commercial\' ORDER BY timestamp DESC');
+    const flights = result.rows;
+    res.json(flights);
+  } catch (error) {
+    console.error('Error fetching flights from database:', error);
+    res.status(500).send('Error fetching flights.');
   }
 });
 

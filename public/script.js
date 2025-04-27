@@ -37,4 +37,28 @@ async function fetchFlights() {
     }
 }
 
-window.addEventListener('DOMContentLoaded', fetchFlights);
+async function fetchLoggedFlights() {
+    const table = document.getElementById('flight-table').getElementsByTagName('tbody')[0];
+    table.innerHTML = '';
+
+    try {
+        const res = await fetch('/api/flights');
+        const data = await res.json();
+
+        data.forEach(flight => {
+            const row = table.insertRow();
+            row.insertCell(0).textContent = flight.callsign;
+            row.insertCell(1).textContent = flight.category;
+            row.insertCell(2).textContent = flight.landing_status;
+            row.insertCell(3).textContent = flight.altitude;
+            row.insertCell(4).textContent = flight.velocity;
+        });
+    } catch (err) {
+        console.error('❌ Error fetching logged flight data:', err);
+    }
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+    fetchFlights();
+    fetchLoggedFlights();
+});
