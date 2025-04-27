@@ -9,6 +9,13 @@ This project tracks flights near Gunnison Airport (KGUC) in real-time, providing
 The app fetches live data from the OpenSky API, categorizes flights, and displays them in a user-friendly web interface. The database is updated with only **Private** flights.
 ---
 
+## Live Demo
+
+You can view the live version of the project here:
+
+[Live Demo](https://gunnison-airport-tracker-28d8dfff50df.herokuapp.com/)
+
+
 ## Features
 
 - **Real-Time Flight Tracking**: Displays live data on flights near Gunnison Airport, including their altitude, velocity, location, and origin.
