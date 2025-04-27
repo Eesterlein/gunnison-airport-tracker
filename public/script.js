@@ -15,7 +15,6 @@ async function fetchFlights() {
         data.forEach(flight => {
             const li = document.createElement('li');
             
-            // Build buttons conditionally
             let links = `<a href="https://globe.adsbexchange.com/?icao=${flight.icao24}" target="_blank">🔎 View on ADS-B Exchange</a>`;
             if (flight.ownerLookup) {
                 links += ` | <a href="${flight.ownerLookup}" target="_blank">🔍 FAA Lookup</a>`;
@@ -37,28 +36,39 @@ async function fetchFlights() {
     }
 }
 
-async function fetchLoggedFlights() {
-    const table = document.getElementById('flight-table').getElementsByTagName('tbody')[0];
-    table.innerHTML = '';
+// Fetch private plane logs from the database
+async function fetchPrivatePlanesLogs() {
+  const tableContainer = document.getElementById('private-planes-logs').getElementsByTagName('tbody')[0];
+  tableContainer.innerHTML = 'Loading logs...';
 
-    try {
-        const res = await fetch('/api/flights');
-        const data = await res.json();
+  try {
+    const res = await fetch('/private-planes-logs');
+    const logs = await res.json();
 
-        data.forEach(flight => {
-            const row = table.insertRow();
-            row.insertCell(0).textContent = flight.callsign;
-            row.insertCell(1).textContent = flight.category;
-            row.insertCell(2).textContent = flight.landing_status;
-            row.insertCell(3).textContent = flight.altitude;
-            row.insertCell(4).textContent = flight.velocity;
-        });
-    } catch (err) {
-        console.error('❌ Error fetching logged flight data:', err);
+    tableContainer.innerHTML = '';  // Clear existing table
+
+    if (!logs.length) {
+      tableContainer.innerHTML = '<tr><td colspan="5">No private plane logs available.</td></tr>';
+      return;
     }
+
+    logs.forEach(log => {
+      const row = tableContainer.insertRow();
+      row.innerHTML = `
+        <td>${log.callsign}</td>
+        <td>${log.category}</td>
+        <td>${log.landing_status}</td>
+        <td>${log.altitude}</td>
+        <td>${log.velocity}</td>
+      `;
+    });
+  } catch (err) {
+    console.error('❌ Error fetching private plane logs:', err);
+    tableContainer.innerHTML = '<tr><td colspan="5">Failed to load logs. Please try again later.</td></tr>';
+  }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
-    fetchFlights();
-    fetchLoggedFlights();
+  fetchFlights();  // Fetch flight data
+  fetchPrivatePlanesLogs();  // Fetch private plane logs from the database
 });

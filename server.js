@@ -105,14 +105,25 @@ app.get('/planes-near-gunnison', async (req, res) => {
       };
     });
 
-    // Insert into database if not a commercial flight
+    // Insert into database if not a commercial flight (and prevent duplicates)
     for (let plane of planes) {
-      if (plane.label !== 'Commercial') {
-        const query = {
-          text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (icao24) DO NOTHING', // Prevents duplicate entries
-          values: [plane.icao24, plane.callsign, plane.originCountry, plane.latitude, plane.longitude, plane.altitude, plane.velocity, plane.onGround, plane.label, plane.landingStatus],
+      if (plane.label === 'Private') {
+        const checkQuery = {
+          text: 'SELECT COUNT(*) FROM flights WHERE icao24 = $1',
+          values: [plane.icao24],
         };
-        await client.query(query);
+        
+        const res = await client.query(checkQuery);
+        const count = res.rows[0].count;
+
+        // Only log if the plane hasn't been seen before
+        if (parseInt(count) === 0) {
+          const query = {
+            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (icao24) DO NOTHING',
+            values: [plane.icao24, plane.callsign, plane.originCountry, plane.latitude, plane.longitude, plane.altitude, plane.velocity, plane.onGround, plane.label, plane.landingStatus],
+          };
+          await client.query(query);
+        }
       }
     }
 
@@ -124,17 +135,22 @@ app.get('/planes-near-gunnison', async (req, res) => {
   }
 });
 
-// Fetch flights from PostgreSQL database
-app.get('/api/flights', async (req, res) => {
+// Fetch private planes from PostgreSQL database
+app.get('/private-planes-logs', async (req, res) => {
   try {
-    const result = await client.query('SELECT * FROM flights WHERE category != \'Commercial\' ORDER BY timestamp DESC');
-    const flights = result.rows;
-    res.json(flights);
+    const result = await client.query('SELECT callsign, category, landing_status, altitude, velocity FROM flights WHERE category = $1', ['Private']);
+    res.status(200).json(result.rows);
   } catch (error) {
-    console.error('Error fetching flights from database:', error);
-    res.status(500).send('Error fetching flights.');
+    console.error('Error fetching private plane logs:', error);
+    res.status(500).send('Error fetching private plane logs.');
   }
 });
+
+// Periodic refresh (every hour)
+setInterval(async () => {
+  console.log('Refreshing flight data...');
+  await fetchFlights();  // You can call fetchFlights from here to refresh data periodically
+}, 60 * 60 * 1000); // Refresh every hour
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running at http://localhost:${PORT}`);
