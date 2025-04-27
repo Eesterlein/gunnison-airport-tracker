@@ -11,7 +11,6 @@ app.use(cors());
 app.use(express.static('public'));
 
 // PostgreSQL Client Setup
-const { Client } = require('pg');
 require('dotenv').config(); // This loads environment variables from your .env file
 
 // PostgreSQL Client Setup using environment variables
