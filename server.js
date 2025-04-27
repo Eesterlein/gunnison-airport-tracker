@@ -56,11 +56,16 @@ app.get('/planes-near-gunnison', async (req, res) => {
         lamax: 39,     // max latitude
         lomin: -107.4,   // min longitude
         lomax: -106.4    // max longitude
-      }
+      },
+      timeout: 10000,  // Set timeout to 10 seconds
     });
 
     const states = response.data.states || [];
     console.log('Fetched Flight Data:', states);  // This will show the data in your terminal
+
+    if (states.length === 0) {
+      console.log('No flights found.');
+    }
 
     const planes = states.filter(plane => {
       const latitude = plane[6];
@@ -111,17 +116,19 @@ app.get('/planes-near-gunnison', async (req, res) => {
           text: 'SELECT COUNT(*) FROM flights WHERE icao24 = $1',
           values: [plane.icao24],
         };
-        
+
         const res = await client.query(checkQuery);
         const count = res.rows[0].count;
 
         // Only log if the plane hasn't been seen before
         if (parseInt(count) === 0) {
           const query = {
-            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) ON CONFLICT (icao24) DO NOTHING',
+            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
             values: [plane.icao24, plane.callsign, plane.originCountry, plane.latitude, plane.longitude, plane.altitude, plane.velocity, plane.onGround, plane.label, plane.landingStatus],
           };
-          await client.query(query);
+          
+          const insertResult = await client.query(query);
+          console.log('Inserted Plane Data:', insertResult.rows);
         }
       }
     }

@@ -2,8 +2,10 @@ async function fetchFlights() {
     const list = document.getElementById('plane-list');
     list.innerHTML = '<li>Loading flight data...</li>';
 
+    const apiUrl = 'https://gunnison-airport-tracker-28d8dfff50df.herokuapp.com/planes-near-gunnison'; // Full URL for Heroku
+
     try {
-        const res = await fetch('/planes-near-gunnison');
+        const res = await fetch(apiUrl);
         const data = await res.json();
         list.innerHTML = '';
 
@@ -41,8 +43,10 @@ async function fetchPrivatePlanesLogs() {
   const tableContainer = document.getElementById('private-planes-logs').getElementsByTagName('tbody')[0];
   tableContainer.innerHTML = 'Loading logs...';
 
+  const apiUrl = 'https://gunnison-airport-tracker-28d8dfff50df.herokuapp.com/private-planes-logs'; // Full URL for Heroku
+
   try {
-    const res = await fetch('/private-planes-logs');
+    const res = await fetch(apiUrl);
     const logs = await res.json();
 
     tableContainer.innerHTML = '';  // Clear existing table
