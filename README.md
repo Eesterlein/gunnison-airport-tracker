@@ -6,16 +6,15 @@
 
 This project tracks flights near Gunnison Airport (KGUC) in real-time, providing up-to-date information on nearby planes. It categorizes flights as **Private**, **Commercial**, or **Military**, displays their current status (whether they are in the air, grounded, or landing soon), and logs **Private** flights seen more than once into a PostgreSQL database.
 
-The app fetches live data from the OpenSky API, categorizes flights, and displays them in a user-friendly web interface. The database is updated with only **Private** flights, ensuring data is logged correctly.
-
+The app fetches live data from the OpenSky API, categorizes flights, and displays them in a user-friendly web interface. The database is updated with only **Private** flights.
 ---
 
 ## Features
 
-- **Real-Time Flight Tracking**: Displays live data on flights near Gunnison Airport, including their altitude, velocity, location, and origin country.
+- **Real-Time Flight Tracking**: Displays live data on flights near Gunnison Airport, including their altitude, velocity, location, and origin.
 - **Flight Categorization**: Categorizes flights as **Private**, **Commercial**, or **Military** based on their callsign prefix.
 - **Landing Status**: Displays the landing status of each flight (e.g., "In Air", "On Ground", "Likely Landing Soon").
-- **Database Logging**: Logs **Private** flights seen more than once into a PostgreSQL database to avoid duplicate entries.
+- **Database Logging**: Logs **Private** flights seen more than once into a PostgreSQL database.
 - **FAA Lookup**: Provides a link to lookup **Private** planes on the FAA registry for more detailed information.
 - **API Integration**: Fetches data from the OpenSky API and PostgreSQL to display relevant flight data in real time.
 
