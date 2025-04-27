@@ -10,11 +10,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.static('public'));
 
-// PostgreSQL Client Setup
+// PostgreSQL Client Setup (Only use DATABASE_URL)
 const client = new Client({
   connectionString: process.env.DATABASE_URL,  // Use the DATABASE_URL provided by Heroku
   ssl: {
-    rejectUnauthorized: false,
+    rejectUnauthorized: false,  // Required for Heroku Postgres SSL connections
   },
 });
 
