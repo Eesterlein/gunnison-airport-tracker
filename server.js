@@ -12,14 +12,11 @@ app.use(express.static('public'));
 
 // PostgreSQL Client Setup
 const client = new Client({
-  user: process.env.DB_USER,  // Use environment variables
-  host: process.env.DB_HOST,
-  database: process.env.DB_NAME,
-  password: process.env.DB_PASSWORD,
-  port: process.env.DB_PORT,
-});
-
-client.connect();
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+  });
 
 // Commercial and Military Prefixes
 const commercialPrefixes = ['UAL', 'AAL', 'SWA', 'SKW', 'DAL', 'ASA', 'FFT', 'JBU', 'NKS', 'ASH', 'ENY', 'RPA', 'QXE'];
