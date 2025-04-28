@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- Added viewport tag -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Gunnison Airport Flight Tracker</title>
   <style>
     body {
@@ -53,14 +53,42 @@
       padding: 0.8rem;
       text-align: left;
     }
+    #owner-lookup-section {
+      text-align: center;
+      margin-top: 2rem;
+      margin-bottom: 1rem;
+    }
+    #owner-lookup-btn {
+      background-color: #0077cc;
+      color: white;
+      border: none;
+      padding: 0.8rem 1.2rem;
+      border-radius: 5px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    #owner-lookup-btn:hover {
+      background-color: #005fa3;
+    }
   </style>
 </head>
 <body>
+
   <h1>🛬 Flights Near Gunnison Airport (KGUC)</h1>
-  <ul id="plane-list"><li>Loading flight data...</li></ul>
+  <ul id="plane-list">
+    <li>Loading flight data...</li>
+  </ul>
+
+  <!-- Owner Lookup Button -->
+  <div id="owner-lookup-section">
+    <a href="https://registry.faa.gov/aircraftinquiry/Search/NNumberResult" target="_blank">
+      <button id="owner-lookup-btn">Owner Lookup</button>
+    </a>
+  </div>
 
   <h2>Private Plane Logs</h2>
-  <p id="private-log-loading">Loading private plane logs...</p> <!-- Added loading message for private logs -->
+  <p id="private-log-loading">Loading private plane logs...</p>
+
   <table id="private-planes-logs">
     <thead>
       <tr>
@@ -69,11 +97,13 @@
         <th>Landing Status</th>
         <th>Altitude (m)</th>
         <th>Velocity (m/s)</th>
+        <th>Owner</th> <!-- Added Owner column -->
       </tr>
     </thead>
     <tbody></tbody>
   </table>
 
   <script src="script.js"></script>
+
 </body>
 </html>

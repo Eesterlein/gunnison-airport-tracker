@@ -141,17 +141,19 @@ app.get('/planes-near-gunnison', async (req, res) => {
   }
 });
 
-// Fetch private planes from PostgreSQL database
+// Fetch private planes from PostgreSQL database (includes owner_name)
 app.get('/private-planes-logs', async (req, res) => {
   try {
-    const result = await client.query('SELECT callsign, category, landing_status, altitude, velocity FROM flights WHERE category = $1', ['Private']);
+    const result = await client.query(
+      'SELECT callsign, category, landing_status, altitude, velocity, owner_name FROM flights WHERE category = $1',
+      ['Private']
+    );
     res.status(200).json(result.rows);
   } catch (error) {
     console.error('Error fetching private plane logs:', error);
     res.status(500).send('Error fetching private plane logs.');
   }
 });
-
 // Periodic refresh (every hour) - you might not need this if fetchFlights is not defined
 // setInterval(async () => {
 //   console.log('Refreshing flight data...');
