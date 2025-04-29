@@ -27,18 +27,18 @@ const militaryPrefixes = ['RCH', 'MC', 'VV', 'VM', 'BAF', 'NATO', 'ROF', 'GAF'];
 // Categorize Flights
 function categorizeFlight(callsign) {
   const tailNumber = callsign?.replace(/\s/g, '') || '';
-  
-  const isPrivate = tailNumber.startsWith('N');
+
   const isCommercial = commercialPrefixes.some(prefix => tailNumber.startsWith(prefix));
   const isMilitary = militaryPrefixes.some(prefix => tailNumber.startsWith(prefix));
+  const isPrivate = tailNumber.startsWith('N');
 
   let category = 'Unknown';
-  if (isPrivate) {
-    category = 'Private';
-  } else if (isCommercial) {
+  if (isCommercial) {
     category = 'Commercial';
   } else if (isMilitary) {
     category = 'Military';
+  } else if (isPrivate) {
+    category = 'Private';
   } else {
     category = 'Possibly Private or Non-U.S.';
   }
