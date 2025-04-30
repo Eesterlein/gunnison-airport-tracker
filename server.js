@@ -10,88 +10,57 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.static('public'));
 
-// PostgreSQL Client Setup (Only use DATABASE_URL)
 const client = new Client({
-  connectionString: process.env.DATABASE_URL,  // Use the DATABASE_URL provided by Heroku
+  connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false,  // Required for Heroku Postgres SSL connections
+    rejectUnauthorized: false,
   },
 });
 
 client.connect();
 
-// Commercial and Military Prefixes
 const commercialPrefixes = ['UAL', 'AAL', 'SWA', 'SKW', 'DAL', 'ASA', 'FFT', 'JBU', 'NKS', 'ASH', 'ENY', 'RPA', 'QXE'];
 const militaryPrefixes = ['RCH', 'MC', 'VV', 'VM', 'BAF', 'NATO', 'ROF', 'GAF'];
 
-// Categorize Flights
 function categorizeFlight(callsign) {
   const tailNumber = callsign?.replace(/\s/g, '') || '';
-
   const isCommercial = commercialPrefixes.some(prefix => tailNumber.startsWith(prefix));
   const isMilitary = militaryPrefixes.some(prefix => tailNumber.startsWith(prefix));
-  const isPrivate = tailNumber.startsWith('N');
+  const isPrivate = tailNumber.startsWith('N') && !isCommercial && !isMilitary;
 
-  let category = 'Unknown';
-  if (isCommercial) {
-    category = 'Commercial';
-  } else if (isMilitary) {
-    category = 'Military';
-  } else if (isPrivate) {
-    category = 'Private';
-  } else {
-    category = 'Possibly Private or Non-U.S.';
-  }
-
-  return category;
+  if (isCommercial) return 'Commercial';
+  if (isMilitary) return 'Military';
+  if (isPrivate) return 'Private';
+  return 'Possibly Private or Non-U.S.';
 }
 
-// Fetch flights near Gunnison from OpenSky API and insert into PostgreSQL
 app.get('/planes-near-gunnison', async (req, res) => {
   try {
-    // Fetch flight data from OpenSky API
     const response = await axios.get('https://opensky-network.org/api/states/all', {
       params: {
-        lamin: 38,     // min latitude
-        lamax: 39,     // max latitude
-        lomin: -107.4,   // min longitude
-        lomax: -106.4    // max longitude
+        lamin: 38,
+        lamax: 39,
+        lomin: -107.4,
+        lomax: -106.4,
       },
-      timeout: 20000,  // Set timeout to 20 seconds
+      timeout: 20000,
     });
 
     const states = response.data.states || [];
-    console.log('Fetched Flight Data:', states);  // This will show the data in your terminal
-
-    if (states.length === 0) {
-      console.log('No flights found.');
-    }
+    console.log('Fetched Flight Data:', states.length);
 
     const planes = states.filter(plane => {
       const latitude = plane[6];
       const longitude = plane[5];
-
-      // Filter only flights above Gunnison Airport (latitude 38-39 and longitude -107.4 to -106.4)
       return latitude >= 38 && latitude <= 39 && longitude >= -107.4 && longitude <= -106.4;
     }).map(plane => {
       const callsign = plane[1]?.trim();
       const altitude = plane[7];
       const verticalRate = plane[11];
       const onGround = plane[8];
-
-      // Determine the category (Private, Commercial, Military, etc.)
       const category = categorizeFlight(callsign);
-
-      // Determine landing status
-      const landingStatus = onGround
-        ? '🟢 On Ground'
-        : verticalRate < 0 && altitude < 10000
-          ? '🔻 Likely Landing Soon'
-          : '🟠 In Air';
-
-      const ownerLookup = category === "Private" && callsign
-        ? `https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?nNumberTxt=${callsign.replace(/^N/, '')}`
-        : null;
+      const landingStatus = onGround ? '🟢 On Ground' : verticalRate < 0 && altitude < 10000 ? '🔻 Likely Landing Soon' : '🟠 In Air';
+      const ownerLookup = category === "Private" && callsign ? `https://registry.faa.gov/aircraftinquiry/Search/NNumberResult?nNumberTxt=${callsign.replace(/^N/, '')}` : null;
 
       return {
         icao24: plane[0],
@@ -105,11 +74,10 @@ app.get('/planes-near-gunnison', async (req, res) => {
         label: category,
         landingStatus,
         ownerLookup,
-        timestamp: plane[4] ? plane[4] * 1000 : Date.now()
+        timestamp: plane[4] ? plane[4] * 1000 : Date.now(),
       };
     });
 
-    // Insert into database if not a commercial flight (and prevent duplicates)
     for (let plane of planes) {
       if (plane.label === 'Private') {
         const checkQuery = {
@@ -117,31 +85,38 @@ app.get('/planes-near-gunnison', async (req, res) => {
           values: [plane.icao24],
         };
 
-        const res = await client.query(checkQuery);
-        const count = res.rows[0].count;
+        const result = await client.query(checkQuery);
+        const count = parseInt(result.rows[0].count);
 
-        // Only log if the plane hasn't been seen before
-        if (parseInt(count) === 0) {
+        if (count === 0) {
           const query = {
-            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
-            values: [plane.icao24, plane.callsign, plane.originCountry, plane.latitude, plane.longitude, plane.altitude, plane.velocity, plane.onGround, plane.label, plane.landingStatus],
+            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+            values: [
+              plane.icao24,
+              plane.callsign,
+              plane.originCountry,
+              plane.latitude,
+              plane.longitude,
+              plane.altitude,
+              plane.velocity,
+              plane.onGround,
+              plane.label,
+              plane.landingStatus,
+            ],
           };
-          
-          const insertResult = await client.query(query);
-          console.log('Inserted Plane Data:', insertResult.rows);
+
+          await client.query(query);
         }
       }
     }
 
-    // Send the flight data as a JSON response to the frontend
     res.status(200).json(planes);
   } catch (error) {
-    console.error('Error fetching or inserting flight data:', error);
+    console.error('❌ Error in /planes-near-gunnison:', error);
     res.status(500).send('Error fetching or inserting flight data.');
   }
 });
 
-// Fetch private planes from PostgreSQL database (includes owner_name)
 app.get('/private-planes-logs', async (req, res) => {
   try {
     const result = await client.query(
@@ -154,11 +129,6 @@ app.get('/private-planes-logs', async (req, res) => {
     res.status(500).send('Error fetching private plane logs.');
   }
 });
-// Periodic refresh (every hour) - you might not need this if fetchFlights is not defined
-// setInterval(async () => {
-//   console.log('Refreshing flight data...');
-//   // await fetchFlights();  // You can call fetchFlights from here to refresh data periodically
-// }, 60 * 60 * 1000); // Refresh every hour
 
 app.listen(PORT, () => {
   console.log(`🚀 Server is running at http://localhost:${PORT}`);
