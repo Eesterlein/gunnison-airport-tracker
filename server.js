@@ -19,14 +19,14 @@ const client = new Client({
 
 client.connect();
 
-const commercialPrefixes = ['UAL', 'AAL', 'SWA', 'SKW', 'DAL', 'ASA', 'FFT', 'JBU', 'NKS', 'ASH', 'ENY', 'RPA', 'QXE'];
+const commercialPrefixes = ['UAL', 'AAL', 'SWA', 'SKW', 'DAL', 'ASA', 'FFT', 'JBU', 'ASH', 'ENY', 'RPA', 'QXE']; // removed NKS
 const militaryPrefixes = ['RCH', 'MC', 'VV', 'VM', 'BAF', 'NATO', 'ROF', 'GAF'];
 
 function categorizeFlight(callsign) {
   const tailNumber = callsign?.replace(/\s/g, '') || '';
   const isCommercial = commercialPrefixes.some(prefix => tailNumber.startsWith(prefix));
   const isMilitary = militaryPrefixes.some(prefix => tailNumber.startsWith(prefix));
-  const isPrivate = tailNumber.startsWith('N') && !isCommercial && !isMilitary;
+  const isPrivate = tailNumber.startsWith('N');
 
   if (isCommercial) return 'Commercial';
   if (isMilitary) return 'Military';
