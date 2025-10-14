@@ -40,7 +40,12 @@ function categorizeFlight(callsign) {
 
 app.get('/planes-near-gunnison', async (req, res) => {
   try {
-    const response = await axios.get('https://opensky-network.org/api/states/all', {
+    // Use authenticated API if credentials are available, otherwise use public API
+    const apiUrl = process.env.OPENSKY_USER && process.env.OPENSKY_PASS
+      ? `https://${process.env.OPENSKY_USER}:${process.env.OPENSKY_PASS}@opensky-network.org/api/states/all`
+      : 'https://opensky-network.org/api/states/all';
+    
+    const response = await axios.get(apiUrl, {
       params: {
         lamin: 38,
         lamax: 39,
