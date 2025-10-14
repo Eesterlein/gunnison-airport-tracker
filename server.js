@@ -12,12 +12,16 @@ app.use(express.static('public'));
 
 const client = new Client({
   connectionString: process.env.DATABASE_URL,
-  ssl: {
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('localhost') ? false : {
     rejectUnauthorized: false,
   },
 });
 
-client.connect();
+// Connect to database with error handling
+client.connect().catch(err => {
+  console.error('❌ Database connection error:', err.message);
+  console.log('💡 Make sure you have a DATABASE_URL environment variable set, or run without database features');
+});
 
 const commercialPrefixes = ['UAL', 'AAL', 'SWA', 'SKW', 'DAL', 'ASA', 'FFT', 'JBU', 'ASH', 'ENY', 'RPA', 'QXE']; // removed NKS
 const militaryPrefixes = ['RCH', 'MC', 'VV', 'VM', 'BAF', 'NATO', 'ROF', 'GAF'];
@@ -78,34 +82,42 @@ app.get('/planes-near-gunnison', async (req, res) => {
       };
     });
 
-    for (let plane of planes) {
-      if (plane.label === 'Private') {
-        const checkQuery = {
-          text: 'SELECT COUNT(*) FROM flights WHERE icao24 = $1',
-          values: [plane.icao24],
-        };
+    // Only try to save to database if DATABASE_URL is available
+    if (process.env.DATABASE_URL) {
+      for (let plane of planes) {
+        if (plane.label === 'Private') {
+          try {
+            const checkQuery = {
+              text: 'SELECT COUNT(*) FROM flights WHERE icao24 = $1',
+              values: [plane.icao24],
+            };
 
-        const result = await client.query(checkQuery);
-        const count = parseInt(result.rows[0].count);
+            const result = await client.query(checkQuery);
+            const count = parseInt(result.rows[0].count);
 
-        if (count === 0) {
-          const query = {
-            text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-            values: [
-              plane.icao24,
-              plane.callsign,
-              plane.originCountry,
-              plane.latitude,
-              plane.longitude,
-              plane.altitude,
-              plane.velocity,
-              plane.onGround,
-              plane.label,
-              plane.landingStatus,
-            ],
-          };
+            if (count === 0) {
+              const query = {
+                text: 'INSERT INTO flights(icao24, callsign, origin_country, latitude, longitude, altitude, velocity, on_ground, category, landing_status) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+                values: [
+                  plane.icao24,
+                  plane.callsign,
+                  plane.originCountry,
+                  plane.latitude,
+                  plane.longitude,
+                  plane.altitude,
+                  plane.velocity,
+                  plane.onGround,
+                  plane.label,
+                  plane.landingStatus,
+                ],
+              };
 
-          await client.query(query);
+              await client.query(query);
+            }
+          } catch (dbError) {
+            console.error('❌ Database error for plane', plane.callsign, ':', dbError.message);
+            // Continue processing other planes even if one fails
+          }
         }
       }
     }
@@ -119,6 +131,10 @@ app.get('/planes-near-gunnison', async (req, res) => {
 
 app.get('/private-planes-logs', async (req, res) => {
   try {
+    if (!process.env.DATABASE_URL) {
+      return res.status(200).json([]);
+    }
+    
     const result = await client.query(
       'SELECT callsign, category, landing_status, altitude, velocity, owner_name FROM flights WHERE category = $1',
       ['Private']
@@ -133,3 +149,4 @@ app.get('/private-planes-logs', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server is running at http://localhost:${PORT}`);
 });
+
