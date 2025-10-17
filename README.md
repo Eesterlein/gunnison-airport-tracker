@@ -64,7 +64,7 @@ You can view the live version of the project here:
 
     ```bash
     git clone https://github.com/eesterlein/gunnison-airport-tracker.git
-    cd gunnison-airport-flight-tracker
+    cd gunnison-airport-tracker
     ```
 
 2. Install the required dependencies:
