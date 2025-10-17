@@ -63,7 +63,7 @@ You can view the live version of the project here:
 1. Clone this repository to your local machine:
 
     ```bash
-    git clone https://github.com/eesterlein/gunnison-airport-flight-tracker.git
+    git clone https://github.com/eesterlein/gunnison-airport-tracker.git
     cd gunnison-airport-flight-tracker
     ```
 
