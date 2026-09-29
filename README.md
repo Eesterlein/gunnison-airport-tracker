@@ -1,5 +1,3 @@
-# gunnison-airport-tracker
-
 # Gunnison Airport Flight Tracker
 
 ## Overview
